@@ -213,7 +213,7 @@ To view the documentation:
 - Start the server: `npm start` (or your run command)
 - Open in browser: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
 
-API Spec is defined in [`docs/swagger.yaml`](./docs/swagger.yaml).
+API Spec is defined in [`./swagger.yaml`](./swagger.yaml).
 
 
 
