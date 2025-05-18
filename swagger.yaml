@@ -1,0 +1,85 @@
+openapi: 3.0.0
+info:
+  title: Marketplace API
+  description: API documentation for voucher vendor
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api/v1/marketplace
+
+paths:
+  /products:
+    get:
+      summary: Get products by vendor
+      parameters:
+        - name: vendor
+          in: query
+          description: Vendor name (e.g., "voucher")
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /validate-inventory:
+    post:
+      summary: Validate product inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vendor:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      BrandProductCode:
+                        type: string
+                      Denomination:
+                        type: string
+      responses:
+        '200':
+          description: Inventory validation result
+
+  /order:
+    post:
+      summary: Place an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                city:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      vendor:
+                        type: string
+                      BrandProductCode:
+                        type: string
+                      Denomination:
+                        type: string
+                      Quantity:
+                        type: integer
+                      ExternalOrderId:
+                        type: string
+      responses:
+        '200':
+          description: Order response

@@ -1,9 +1,11 @@
 const axios = require('axios');
+const dotenv = require('dotenv');
 const BaseVendor = require('./base-vendor');
+dotenv.config();
 
 class EcomVendor extends BaseVendor {
   constructor(merchantId, accessKey) {
-    super('http://staging.joinelixir.club/api/v1/marketplace');
+    super(process.env.ECOM_BASEURL);
     this.merchantId = merchantId;
     this.accessKey = accessKey;
     this.token = null;

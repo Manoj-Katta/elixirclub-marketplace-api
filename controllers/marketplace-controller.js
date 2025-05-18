@@ -1,8 +1,21 @@
 const EcomVendor = require('../services/ecom-vendor');
 const VoucherVendor = require('../services/voucher-vendor');
+const MockEcomVendor = require('../services/mock-ecom-vendor');
+const dotenv = require('dotenv');
+dotenv.config();
 
 function getVendor(vendorName) {
-    if (vendorName === 'ecom') return new EcomVendor('Merchant Id', 'Access key');
+    if (vendorName === 'ecom') {
+        const merchantId = process.env.ECOM_MERCHANT_ID;
+        const accessKey = process.env.ECOM_ACCESS_KEY;
+
+        if (merchantId && accessKey) {
+            return new EcomVendor(merchantId, accessKey);
+        } else {
+            console.warn('Ecom credentials missing - using MockEcomVendor');
+            return new MockEcomVendor();
+        }
+    }
     if (vendorName === 'voucher') return new VoucherVendor();
     throw new Error('Invalid vendor');
 }
