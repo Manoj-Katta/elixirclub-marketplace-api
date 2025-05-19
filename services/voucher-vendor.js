@@ -24,7 +24,7 @@ class VoucherVendor extends BaseVendor {
 
             if (response.data.code === '0000' && response.data.status === 'success') {
                 this.token = decryptPayload(response.data.data, false);
-               // console.log(this.token);         
+                // console.log(this.token);         
             } else {
                 throw new Error('Failed to get token');
             }
@@ -65,8 +65,11 @@ class VoucherVendor extends BaseVendor {
     async placeOrder({ city = '', items }) {
         await this.authorize();
 
+        if (!items || items.length === 0) {
+            throw new Error('No items provided for voucher placeOrder');
+        }
         // Filter valid items with quantity > 0
-       const validItems = items.filter(item => (item.quantity || item.Quantity) > 0);
+        const validItems = items.filter(item => (item.quantity || item.Quantity) > 0);
 
         if (validItems.length === 0) {
             throw new Error('No valid items to place voucher order');
@@ -138,9 +141,9 @@ class VoucherVendor extends BaseVendor {
                     headers: { token: this.token, 'Content-Type': 'application/json' },
                 }
             );
-           // console.log('Raw api res: ', response.data);
+            // console.log('Raw api res: ', response.data);
             const decrypted = decryptPayload(response.data?.data);
-           // console.log("Decrypted Response", decrypted);
+            // console.log("Decrypted Response", decrypted);
             if (decrypted && decrypted.AvailableQuantity && parseInt(decrypted.AvailableQuantity) > 0) {
                 valid.push({
                     BrandProductCode,

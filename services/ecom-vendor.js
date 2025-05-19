@@ -7,6 +7,7 @@ class EcomVendor extends BaseVendor {
   constructor(merchantId, accessKey) {
     super(process.env.ECOM_BASEURL);
     this.merchantId = merchantId;
+    // process.env.ECOM_MERCHANT_ID;
     this.accessKey = accessKey;
     this.token = null;
   }
@@ -14,13 +15,10 @@ class EcomVendor extends BaseVendor {
   // Authorize to get access token for other requests
   async authorize() {
     try {
-      const response = await axios.post(`${this.baseUrl}/auth/token`, {
-        merchantId: this.merchantId,
-        accessKey: this.accessKey,
-      });
+      const response = await axios.get(`${this.baseUrl}/generate-jwt/${this.merchantId}`);
 
-      if (response.data && response.data.token) {
-        this.token = response.data.token;
+      if (response.data && response.data.data && response.data.data.token) {
+        this.token = response.data.data.token;
       } else {
         throw new Error('Authorization failed: No token received');
       }
@@ -35,80 +33,127 @@ class EcomVendor extends BaseVendor {
     if (!this.token) await this.authorize();
 
     try {
-      const response = await axios.get(`${this.baseUrl}/serviceability`, {
-        headers: { Authorization: `Bearer ${this.token}` },
+      const response = await axios.get(`${this.baseUrl}/city-serviceable`, {
+        headers: { 'X-Access-Key': this.accessKey },
         params: { city },
       });
 
-      // Assuming API returns { serviceable: true/false }
-      return response.data?.serviceable === true;
+      return response.data?.data?.serviceable === true;
     } catch (err) {
       console.error('Serviceability check failed:', err.message);
-      // Default to false if any error occurs
       return false;
     }
   }
 
+
   // Fetch products available from Ecom vendor
-  async getProducts() {
+  async getProducts(query = "", filters = {}) {
     if (!this.token) await this.authorize();
-
+    console.log(this.token);
     try {
-      const response = await axios.get(`${this.baseUrl}/products`, {
-        headers: { Authorization: `Bearer ${this.token}` },
-      });
+      const response = await axios.post(
+        `${this.baseUrl}/search`,
+        {
+          query,
+          filters
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-      return response.data.products || [];
+      return response.data?.data?.search_results || [];
     } catch (err) {
       console.error('Ecom getProducts error:', err.message);
       throw new Error('Failed to get products from Ecom vendor');
     }
   }
 
+
   // Validate inventory for given product IDs
-  async validateInventory(productIds) {
+  async validateInventory(items) {
     if (!this.token) await this.authorize();
 
     try {
-      const response = await axios.post(`${this.baseUrl}/inventory/validate`, {
-        productIds,
-      }, {
-        headers: { Authorization: `Bearer ${this.token}` },
-      });
+      const response = await axios.post(
+        `${this.baseUrl}/validate-inventory`,
+        { items },
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      return response.data || {};
+      const data = response.data?.data || {};
+      const skus = data.skus || {};
+
+      const availableSKUs = [];
+      const invalidSKUs = [];
+
+      for (const { sku, quantity: requestedQty } of items) {
+        const info = skus[sku];
+
+        if (info && info.quantity > 0) {
+          const availableQty = Math.min(requestedQty, info.quantity);
+
+          availableSKUs.push({
+            sku,
+            available_quantity: info.quantity,
+            requested_quantity: requestedQty,
+            offered_price: info.offered_price,
+            total_price: info.offered_price * availableQty,
+            discounted_price: info.discounted_price
+          });
+        } else {
+          invalidSKUs.push({ sku, reason: info ? 'Out of stock' : 'Invalid SKU' });
+        }
+      }
+
+      const totalAvailablePrice = availableSKUs.reduce(
+        (sum, item) => sum + item.total_price,
+        0
+      );
+
+      return {
+        availableSKUs,
+        invalidSKUs,
+        totalAvailablePrice,
+        payableAmount: data.payable_amount || 0,
+        vasCharges: data.vas_charges || {},
+        eta: data.eta || null,
+      };
     } catch (err) {
       console.error('Ecom validateInventory error:', err.message);
       throw new Error('Inventory validation failed for Ecom vendor');
     }
   }
 
+
+
   // Place order with Ecom vendor
-  async placeOrder({ city, items }) {
+  async placeOrder({ orderId, transactionId }) {
     if (!this.token) await this.authorize();
 
+    if (!orderId || !transactionId) {
+      throw new Error('orderId and transactionId are required for Ecom placeOrder');
+    }
+
     try {
-      const orderPayload = {
-        city,
-        items: items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          externalOrderId: item.externalOrderId,
-        })),
-      };
+      const response = await axios.post(
+        `${this.baseUrl}/orders/${orderId}/confirm`,
+        { transaction_id: transactionId },
+        { headers: { Authorization: `Bearer ${this.token}` } }
+      );
 
-      const response = await axios.post(`${this.baseUrl}/orders/place`, orderPayload, {
-        headers: { Authorization: `Bearer ${this.token}` },
-      });
-
-      if (response.data.success) {
-        return response.data.orderDetails;
-      } else {
-        throw new Error(response.data.message || 'Order placement failed');
-      }
+      return response.data?.data || {};
     } catch (err) {
-      console.error('Ecom placeOrder error:', err.message);
-      throw new Error('Failed to place order with Ecom vendor');
+      console.error('Ecom confirmOrder error:', err.message);
+      throw new Error('Failed to confirm order with Ecom vendor');
     }
   }
 }
