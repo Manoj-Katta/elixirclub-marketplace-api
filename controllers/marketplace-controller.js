@@ -1,6 +1,5 @@
 const EcomVendor = require('../services/ecom-vendor');
 const VoucherVendor = require('../services/voucher-vendor');
-const MockEcomVendor = require('../services/mock-ecom-vendor');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -40,9 +39,13 @@ exports.getProducts = async (req, res) => {
 
 exports.placeOrder = async (req, res) => {
   try {
-    const { city, items, orderId, transactionId } = req.body;
+    const { city = '', items = [], orderId, transactionId } = req.body;
 
-    // Validate inputs for ecom vendor serviceability
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'No items provided in the order' });
+    }
+
+    // Validate ecom vendor serviceability if there are any ecom items
     const hasEcomItems = items.some(item => item.vendor === 'ecom');
 
     if (hasEcomItems) {
@@ -52,10 +55,11 @@ exports.placeOrder = async (req, res) => {
         return res.status(400).json({ error: 'City not serviceable for ecom vendor' });
       }
     }
-    console.log('done till address');
+
     // Group items by vendor
     const groupedByVendor = items.reduce((acc, item) => {
       const { vendor } = item;
+      if (!vendor) return acc; // Skip items with no vendor
       if (!acc[vendor]) acc[vendor] = [];
       acc[vendor].push(item);
       return acc;
@@ -63,15 +67,14 @@ exports.placeOrder = async (req, res) => {
 
     const orderResults = {};
 
-    // Call placeOrder for each vendor with proper params
+    // Process each vendor separately
     for (const vendorName of Object.keys(groupedByVendor)) {
       const vendor = getVendor(vendorName);
 
-      // Prepare vendor-specific orderData
       let orderData;
 
       if (vendorName === 'ecom') {
-        // For ecom, we expect orderId and transactionId from the request body
+        // For ecom vendor, require orderId and transactionId in request body
         if (!orderId || !transactionId) {
           orderResults[vendorName] = {
             success: false,
@@ -82,18 +85,36 @@ exports.placeOrder = async (req, res) => {
         orderData = { orderId, transactionId };
 
       } else if (vendorName === 'voucher') {
+        // For voucher vendor, send city and items formatted as expected
+
+        const formattedItems = groupedByVendor[vendorName].map(item => ({
+          BrandProductCode: item.BrandProductCode || item.brandProductCode,
+          Denomination: item.Denomination || item.denomination,
+          Quantity: item.Quantity || item.quantity || 1,
+          ExternalOrderId: item.ExternalOrderId || item.externalOrderId || ''
+        }));
+
+        if (formattedItems.length === 0) {
+          orderResults[vendorName] = {
+            success: false,
+            error: 'No valid items to place voucher order'
+          };
+          continue;
+        }
+
         orderData = {
           city,
-          items: groupedByVendor[vendorName]
+          items: formattedItems
         };
+
       } else {
-        // Default fallback for other vendors, just pass items and city
+        // Default: pass city and items for other vendors
         orderData = {
           city,
           items: groupedByVendor[vendorName]
         };
       }
-      console.log('done till grouping');
+
       try {
         const result = await vendor.placeOrder(orderData);
         orderResults[vendorName] = { success: true, data: result };
@@ -105,11 +126,11 @@ exports.placeOrder = async (req, res) => {
       }
     }
 
-    res.json({ orderResults });
+    return res.json({ orderResults });
 
   } catch (err) {
     console.error('Order API failed:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 

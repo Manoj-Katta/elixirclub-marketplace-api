@@ -220,23 +220,39 @@ Body:
 
 ```json
 {
-  "city": "New York",
+  "city": "New Delhi",
+  "orderId": "order_12345",
+  "transactionId": "txn_abcde",
   "items": [
-          {
+    {
+      "vendor": "ecom",
+      "productId": "prod_001",
+      "quantity": 2
+    },
+    {
       "vendor": "voucher",
       "BrandProductCode": "BenettonRwJ6cqVWqPPML1BH",
-      "denomination": "5000",        
+      "Denomination": "5000",
       "Quantity": 2,
       "ExternalOrderId": "teststaging-05"
     }
   ]
 }
+
 ```
 Response:
 
 ```json
 {
     "orderResults": {
+        "ecom": {
+            "success": true,
+            "data": {
+                "order_id": "order_12345",
+                "message": "Order confirmation processed (mock). Waiting for payment verification.",
+                "status": "CONFIRMED"
+            }
+        },
         "voucher": {
             "success": true,
             "data": [
@@ -248,25 +264,25 @@ Response:
                     "Message": "Process successfully completed",
                     "PullVouchers": [
                         {
-                            "ProductGuid": "31595e13-c4d0-4ad9-9b07-88fd02ac5b7d",
+                            "ProductGuid": "c245f82d-fe09-4ae1-bdab-95e1e29a1628",
                             "ProductName": "Benetton",
                             "VoucherName": "Benetton INR 5000",
                             "Vouchers": [
                                 {
                                     "EndDate": "31 Dec 2024",
                                     "Value": "5000.00",
-                                    "VoucherGCcode": "GCCODE_1747572944325_0",
-                                    "VoucherGuid": "cc559928-9f7b-4b7e-b812-ce37e903e3f4",
-                                    "VoucherNo": "BV_1747572944325_0",
-                                    "Voucherpin": ""
+                                    "VoucherGCcode": "GCCODE_1747761470976_0",
+                                    "VoucherGuid": "bd47966d-87f3-4e24-99ca-1ff3d4d6da7e",
+                                    "VoucherNo": "BV_1747761470976_0",
+                                    "Voucherpin": "5174"
                                 },
                                 {
                                     "EndDate": "31 Dec 2024",
                                     "Value": "5000.00",
-                                    "VoucherGCcode": "GCCODE_1747572944325_1",
-                                    "VoucherGuid": "d460073c-d899-4a72-8fbc-577c88fe39e0",
-                                    "VoucherNo": "BV_1747572944325_1",
-                                    "Voucherpin": "3450"
+                                    "VoucherGCcode": "GCCODE_1747761470976_1",
+                                    "VoucherGuid": "e6ceaff6-6c7c-41eb-be29-4332f0dbf7b8",
+                                    "VoucherNo": "BV_1747761470976_1",
+                                    "Voucherpin": "8264"
                                 }
                             ]
                         }
