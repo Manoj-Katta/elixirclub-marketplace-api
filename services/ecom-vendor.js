@@ -75,73 +75,64 @@ class EcomVendor extends BaseVendor {
 
 
   // Validate inventory for given product IDs
-  async validateInventory(items) {
-    if (!this.token) await this.authorize();
+ async validateInventory(items) {
+  if (!this.token) await this.authorize();
 
-    try {
-      const response = await axios.post(
-        `${this.baseUrl}/validate-inventory`,
-        { items },
-        {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const data = response.data?.data || {};
-      const skus = data.skus || {};
-
-      const availableSKUs = [];
-      const invalidSKUs = [];
-
-      for (const { sku, quantity: requestedQty } of items) {
-        const info = skus[sku];
-
-        if (info && info.quantity > 0) {
-          const availableQty = Math.min(requestedQty, info.quantity);
-
-          availableSKUs.push({
-            sku,
-            available_quantity: info.quantity,
-            requested_quantity: requestedQty,
-            offered_price: info.offered_price,
-            total_price: info.offered_price * availableQty,
-            discounted_price: info.discounted_price
-          });
-        } else {
-          invalidSKUs.push({ sku, reason: info ? 'Out of stock' : 'Invalid SKU' });
-        }
+  try {
+    const response = await axios.post(
+      `${this.baseUrl}/validate-inventory`,
+      { items },
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
       }
+    );
+    const responseItems = response.data?.data?.items || [];
 
-      const totalAvailablePrice = availableSKUs.reduce(
-        (sum, item) => sum + item.total_price,
-        0
-      );
+    const availableSKUs = [];
+    const invalidSKUs = [];
 
-      return {
-        availableSKUs,
-        invalidSKUs,
-        totalAvailablePrice,
-        payableAmount: data.payable_amount || 0,
-        vasCharges: data.vas_charges || {},
-        eta: data.eta || null,
-      };
-    } catch (err) {
-      console.error('Ecom validateInventory error:', err.message);
-      throw new Error('Inventory validation failed for Ecom vendor');
+    for (const item of responseItems) {
+      const { sku, available, message, requested_quantity, available_quantity } = item;
+
+      if (available) {
+        availableSKUs.push({
+          sku,
+          requested_quantity,
+          available_quantity,
+          // offered_price: null,
+          // total_price: null,
+          // discounted_price: null
+        });
+      } else {
+        invalidSKUs.push({ sku, reason: message || 'Unavailable' });
+      }
     }
+
+    return {
+      availableSKUs,
+      invalidSKUs,
+      // totalAvailablePrice: 0,
+      // payableAmount: 0,
+      // vasCharges: {},
+      // eta: null
+    };
+  } catch (err) {
+    console.error('Ecom validateInventory error:', err.message);
+    throw new Error('Inventory validation failed for Ecom vendor');
   }
+}
 
 
 
   // Place order with Ecom vendor
-  async placeOrder({orderData}) {
+  async placeOrder(orderData) {
     if (!this.token) await this.authorize();
-    const orderId = orderData.orderId;
-    const transactionId = orderData.transactionId;
-    console.log(orderId + ', ' + transactionId );
+
+    const { orderId, transactionId } = orderData;
+
     if (!orderId || !transactionId) {
       throw new Error('orderId and transactionId are required for Ecom placeOrder');
     }
@@ -162,11 +153,11 @@ class EcomVendor extends BaseVendor {
       } else {
         console.error('Ecom confirmOrder setup error:', err.message);
       }
+
       throw new Error('Failed to confirm order with Ecom vendor');
-
-
     }
   }
+
 }
 
 module.exports = EcomVendor;
