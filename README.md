@@ -43,7 +43,19 @@ http://localhost:3000/api/v1/marketplace/
 ## Sample Requests
 
 ### Get All Products
-GET localhost:3000/api/v1/marketplace/products?vendor=voucher
+
+#### Voucher Vendor:
+Request:
+
+GET `/api/v1/marketplace/products?vendor=voucher`
+
+Body:
+```json
+{
+    "BrandProductCode": {},
+    "OttRequired": "N"
+}
+```
 
 Response:
 ```json
@@ -81,7 +93,62 @@ Response:
 ]
 ```
 
+#### Ecom Vendor:
+
+Request:
+
+GET `/api/v1/marketplace/products?vendor=ecom`
+
+Body:
+```json
+{
+    "query": "telma",
+    "filters": {
+        "rx_required": true,
+        "type": "drug"
+    }
+}
+
+```
+
+Response:
+```json
+[
+    {
+        "BrandProductCode": "Bata4xfRrUnT46Uv4iol",
+        "BrandName": "Bata",
+        "Brandtype": "VOUCHER",
+        "RedemptionType": "2",
+        "OnlineRedemptionUrl": "https://www.bata.in/",
+        "BrandImage": "https://cdn.gyftr.com/comm_engine/stag/images/brands/1593693691875_u3qtc3vzkc4s2qqr.png",
+        "denominationList": "100,500",
+        "stockAvailable": "true",
+        "Category": "BATA-API,Footwear",
+        "Descriptions": "Affordable footwear.",
+        "tnc": "Bata T&C apply.",
+        "importantInstruction": "Use within validity.",
+        "redeemSteps": "{\"1\":{\"text\":\"Locate outlet\"},\"2\":{\"text\":\"Select product\"},\"3\":{\"text\":\"Share voucher\"}}"
+    },
+    {
+        "BrandProductCode": "BenettonRwJ6cqVWqPPML1BH",
+        "BrandName": "Benetton",
+        "Brandtype": "VOUCHER",
+        "RedemptionType": "3",
+        "OnlineRedemptionUrl": "https://benetton.example.com/",
+        "BrandImage": "https://via.placeholder.com/100?text=Benetton",
+        "denominationList": "500,1000,5000",
+        "stockAvailable": "true",
+        "Category": "Fashion,Apparel",
+        "Descriptions": "Colorful apparel.",
+        "tnc": "Benetton T&C apply.",
+        "importantInstruction": "Valid online and offline.",
+        "redeemSteps": "{\"1\":{\"text\":\"Visit store/website\"},\"2\":{\"text\":\"Add to cart\"},\"3\":{\"text\":\"Apply voucher\"}}"
+    }
+]
+```
 ### Validate Inventory
+#### Voucher vendor:
+Request:
 
 POST `/api/v1/marketplace/validate-inventory`
 
@@ -109,9 +176,45 @@ Response:
     "invalidProducts": []
 }
 ```
+#### Ecom Vendor:
+Request:
+
+POST `/api/v1/marketplace/validate-inventory`
+
+Body:
+```json
+{
+  "vendor": "ecom",
+   "items": [
+        {
+            "sku": "340679",
+            "quantity": 0
+        }
+    ]
+}
+```
+
+Response:
+```json
+{
+    "availableSKUs": [],
+    "invalidSKUs": [
+        {
+            "sku": "340679",
+            "reason": "Invalid SKU"
+        }
+    ],
+    "totalAvailablePrice": 0,
+    "payableAmount": 0,
+    "vasCharges": {},
+    "eta": null
+}
+```
+
+
 ### Place Order
 
-POST /api/v1/marketplace/order
+POST `/api/v1/marketplace/order`
 
 Body:
 
@@ -176,35 +279,9 @@ Response:
 }
 ```
 
-## Vendor Credentials Note
 
-This project currently contains complete API implementations, requests, and sample responses for the **voucher** vendor.
 
-The **ecom** vendor integration requires authentication credentials, which were not provided. Therefore, ecom vendor endpoints and responses are not included in this submission.
-
-Once the necessary credentials are obtained, I will finalize the ecom vendor integration and provide corresponding documentation.
-
-### Mock Vendor Setup for Development
-- Since Ecom vendor credentials (merchantId and accessKey) are not available, this project includes a MockEcomVendor class that simulates vendor responses.
-
-- If real credentials are set in your .env file, the real EcomVendor class will be used.
-
-- Otherwise, the system falls back to MockEcomVendor automatically.
-
-- This allows testing your application flow end-to-end without real API access.
-
-### How Mock Works
-- Mock vendor always authorizes successfully.
-
-- All cities are serviceable.
-
-- Returns a fixed set of mock products.
-
-- Inventory validation always returns products as available.
-
-- Order placement returns a mocked success response with an order ID.
-
-## 📘 API Documentation
+### 📘 API Documentation
 
 This project uses Swagger UI for interactive API docs.
 
@@ -213,7 +290,7 @@ To view the documentation:
 - Start the server: `npm start` (or your run command)
 - Open in browser: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
 
-API Spec is defined in [`./swagger.yaml`](./swagger.yaml).
+API Spec is defined in [`docs/swagger.yaml`](./docs/swagger.yaml).
 
 
 

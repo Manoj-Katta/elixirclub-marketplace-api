@@ -3,7 +3,7 @@ const {getProducts, placeOrder, validateInventory} = require('../controllers/mar
 
 const router = express.Router();
 
-router.get('/products', getProducts);
+router.get('/products', getProducts)
 router.post('/validate-inventory', validateInventory);
 router.post('/order', placeOrder);
 

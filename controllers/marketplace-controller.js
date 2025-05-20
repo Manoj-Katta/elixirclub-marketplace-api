@@ -5,46 +5,38 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 function getVendor(vendorName) {
-    if (vendorName === 'ecom') {
-        const merchantId = process.env.ECOM_MERCHANT_ID;
-        const accessKey = process.env.ECOM_ACCESS_KEY;
-       //console.log(merchantId);
-        // if (merchantId && !accessKey) {
-        return new EcomVendor(merchantId, accessKey);
-        // }
-        // } else {
-        //     console.warn('Ecom credentials missing - using MockEcomVendor');
-        //     return new MockEcomVendor();
-        // }
-    }
-    if (vendorName === 'voucher') return new VoucherVendor();
-    throw new Error('Invalid vendor');
+  if (vendorName === 'ecom') {
+    const merchantId = process.env.ECOM_MERCHANT_ID;
+    const accessKey = process.env.ECOM_ACCESS_KEY;
+    return new EcomVendor(merchantId, accessKey);
+  }
+  if (vendorName === 'voucher') return new VoucherVendor();
+  throw new Error('Invalid vendor');
 }
 
 exports.getProducts = async (req, res) => {
   try {
     const vendorName = req.query.vendor;
-    const query = req.query.query || "";
-    let filters = {};
-
-    if (req.query.filters) {
-      try {
-        filters = JSON.parse(req.query.filters);
-      } catch {
-        return res.status(400).json({ error: 'Invalid filters JSON' });
-      }
+    if (!vendorName) {
+      return res.status(400).json({ error: 'Vendor is required' });
     }
 
     const vendor = getVendor(vendorName);
     await vendor.authorize();
 
+    let query = "";
+    let filters = {};
+
+    query = req.body.query || "";
+    filters = req.body.filters || {};
+
     const products = await vendor.getProducts(query, filters);
     res.json(products);
   } catch (err) {
+    console.error("getProducts error:", err.message);
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.placeOrder = async (req, res) => {
   try {
@@ -60,7 +52,7 @@ exports.placeOrder = async (req, res) => {
         return res.status(400).json({ error: 'City not serviceable for ecom vendor' });
       }
     }
-
+    console.log('done till address');
     // Group items by vendor
     const groupedByVendor = items.reduce((acc, item) => {
       const { vendor } = item;
@@ -101,7 +93,7 @@ exports.placeOrder = async (req, res) => {
           items: groupedByVendor[vendorName]
         };
       }
-
+      console.log('done till grouping');
       try {
         const result = await vendor.placeOrder(orderData);
         orderResults[vendorName] = { success: true, data: result };
@@ -123,19 +115,19 @@ exports.placeOrder = async (req, res) => {
 
 
 exports.validateInventory = async (req, res) => {
-    try {
-        const { vendor: vendorName, items } = req.body;
+  try {
+    const { vendor: vendorName, items } = req.body;
 
-        if (!vendorName || !items) {
-            return res.status(400).json({ error: 'vendor and items are required' });
-        }
-
-        const vendor = getVendor(vendorName);
-        await vendor.authorize();
-        const result = await vendor.validateInventory(items);
-        res.json(result);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (!vendorName || !items) {
+      return res.status(400).json({ error: 'vendor and items are required' });
     }
+
+    const vendor = getVendor(vendorName);
+    await vendor.authorize();
+    const result = await vendor.validateInventory(items);
+    res.json(result);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

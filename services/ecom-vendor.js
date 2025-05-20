@@ -49,7 +49,6 @@ class EcomVendor extends BaseVendor {
   // Fetch products available from Ecom vendor
   async getProducts(query = "", filters = {}) {
     if (!this.token) await this.authorize();
-    console.log(this.token);
     try {
       const response = await axios.post(
         `${this.baseUrl}/search`,
@@ -60,14 +59,16 @@ class EcomVendor extends BaseVendor {
         {
           headers: {
             Authorization: `Bearer ${this.token}`,
-            'Content-Type': 'application/json'
           }
         }
       );
+      // console.log(response.data);
 
-      return response.data?.data?.search_results || [];
+      return response.data || [];
     } catch (err) {
-      console.error('Ecom getProducts error:', err.message);
+      if (err.response) {
+        console.error('Ecom getProducts error:', err.message);
+      }
       throw new Error('Failed to get products from Ecom vendor');
     }
   }
@@ -136,9 +137,11 @@ class EcomVendor extends BaseVendor {
 
 
   // Place order with Ecom vendor
-  async placeOrder({ orderId, transactionId }) {
+  async placeOrder({orderData}) {
     if (!this.token) await this.authorize();
-
+    const orderId = orderData.orderId;
+    const transactionId = orderData.transactionId;
+    console.log(orderId + ', ' + transactionId );
     if (!orderId || !transactionId) {
       throw new Error('orderId and transactionId are required for Ecom placeOrder');
     }
@@ -152,8 +155,16 @@ class EcomVendor extends BaseVendor {
 
       return response.data?.data || {};
     } catch (err) {
-      console.error('Ecom confirmOrder error:', err.message);
+      if (err.response) {
+        console.error('Ecom confirmOrder response error:', err.response.status, err.response.data);
+      } else if (err.request) {
+        console.error('Ecom confirmOrder no response error:', err.request);
+      } else {
+        console.error('Ecom confirmOrder setup error:', err.message);
+      }
       throw new Error('Failed to confirm order with Ecom vendor');
+
+
     }
   }
 }

@@ -46,7 +46,7 @@ class VoucherVendor extends BaseVendor {
         const payload = encryptPayload(requestBody);
 
         const response = await axios.post(`${this.baseUrl}/getbrands`,
-            { payload },
+             {payload} ,
             {
                 headers: {
                     token: this.token,
