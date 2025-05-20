@@ -42,4 +42,4 @@ class MockEcomVendor {
     }
 }
 
-module.exports = MockEcomVendor;
+module.exports = MockEcomVendor
