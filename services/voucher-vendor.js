@@ -35,16 +35,17 @@ class VoucherVendor extends BaseVendor {
     }
 
     // Fetch products, optionally filtered by brandProductCode
-    async getProducts(brandProductCode = null, ottRequired = 'N') {
+    async getProducts(BrandProductCode = null, OttRequired = 'N') {
         await this.authorize();
-
-        const requestBody = brandProductCode ? {
-            BrandProductCode: brandProductCode,
-            OttRequired: ottRequired
+        
+       const requestBody = BrandProductCode ? {
+            BrandProductCode: BrandProductCode,
+            OttRequired: OttRequired
         } : {};
 
+        // console.log(requestBody);
         const payload = encryptPayload(requestBody);
-
+        // console.log(payload);
         const response = await axios.post(`${this.baseUrl}/getbrands`,
              {payload} ,
             {

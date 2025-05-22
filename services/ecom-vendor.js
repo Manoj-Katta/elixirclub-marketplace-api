@@ -49,6 +49,7 @@ class EcomVendor extends BaseVendor {
   // Fetch products available from Ecom vendor
   async getProducts(query = "", filters = {}) {
     if (!this.token) await this.authorize();
+    // console.log(query + '\n' + filters)
     try {
       const response = await axios.post(
         `${this.baseUrl}/search`,
@@ -89,6 +90,7 @@ class EcomVendor extends BaseVendor {
         },
       }
     );
+    // console.log(this.token);
     const responseItems = response.data?.data?.items || [];
 
     const availableSKUs = [];

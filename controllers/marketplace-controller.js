@@ -25,12 +25,23 @@ exports.getProducts = async (req, res) => {
 
     let query = "";
     let filters = {};
+    let BrandProductCode = "";
+    let OttRequired = "";
+
+    BrandProductCode = req.body.BrandProductCode || req.body.brandProductCode;
+    OttRequired = req.body.OttRequired || req.body.ottRequired;
 
     query = req.body.query || "";
     filters = req.body.filters || {};
 
-    const products = await vendor.getProducts(query, filters);
-    res.json(products);
+    if (BrandProductCode) {
+      const products = await vendor.getProducts(BrandProductCode, OttRequired);
+      res.json(products);
+    }
+    else {
+      const products = await vendor.getProducts(query, filters);
+      res.json(products);
+    }
   } catch (err) {
     console.error("getProducts error:", err.message);
     res.status(500).json({ error: err.message });
